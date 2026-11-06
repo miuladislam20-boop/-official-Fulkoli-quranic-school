@@ -5,6 +5,7 @@ import {
   saveStudentAccounts,
   saveCurrentStudentSession,
 } from '../services/storageService';
+import { saveCloudStudents } from '../services/cloudService';
 import {
   User,
   Lock,
@@ -130,6 +131,7 @@ export const StudentAuthModal: React.FC<StudentAuthModalProps> = ({
 
     const updated = [newStudent, ...accounts];
     saveStudentAccounts(updated);
+    saveCloudStudents(updated);
     saveCurrentStudentSession(newStudent);
 
     setSuccessMsg('আপনার স্টুডেন্ট একাউন্ট সফলভাবে তৈরি হয়েছে!');

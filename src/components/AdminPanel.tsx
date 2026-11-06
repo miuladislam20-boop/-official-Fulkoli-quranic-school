@@ -21,6 +21,7 @@ import {
   copyTextToClipboard,
   restoreFullBackup,
   getStoredStudentAccounts,
+  saveStudentAccounts,
   exportResultsToExcel,
   downloadExcelTemplate,
   parseExcelResults,
@@ -28,6 +29,15 @@ import {
   exportResultToWord,
   exportAllResultsToWord,
 } from '../services/storageService';
+import {
+  saveCloudSchoolInfo,
+  saveCloudTeachers,
+  saveCloudNotices,
+  saveCloudResults,
+  saveCloudApplications,
+  saveCloudStudents,
+  saveCloudAdminPassword,
+} from '../services/cloudService';
 import { computeResultStats, toBengaliNumber } from '../utils/gradeCalculator';
 import {
   Plus,
@@ -54,6 +64,7 @@ import {
   FileText,
   Copy,
   ClipboardPaste,
+  Cloud,
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -196,7 +207,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       );
       setResults(updated);
       saveResults(updated);
-      showNotification('ফলাফল সফলভাবে আপডেট করা হয়েছে।');
+      saveCloudResults(updated);
+      showNotification('ফলাফল সফলভাবে ক্লাউড ডাটাবেজে সংরক্ষিত ও আপডেট করা হয়েছে।');
     } else {
       const newRecord: StudentResult = {
         id: `res-${Date.now()}`,
@@ -206,7 +218,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       const updated = [newRecord, ...results];
       setResults(updated);
       saveResults(updated);
-      showNotification('নতুন ফলাফল সফলভাবে যোগ করা হয়েছে।');
+      saveCloudResults(updated);
+      showNotification('নতুন ফলাফল সফলভাবে ক্লাউড ডাটাবেজে যোগ করা হয়েছে।');
     }
     setIsResultModalOpen(false);
   };
@@ -221,6 +234,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         const updated = results.filter((item) => item.id !== r.id);
         setResults(updated);
         saveResults(updated);
+        saveCloudResults(updated);
         setSelectedResultIds((prev) => prev.filter((id) => id !== r.id));
         setDeleteConfirm(null);
         showNotification('ফলাফল সফলভাবে মুছে ফেলা হয়েছে।');
@@ -239,6 +253,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         const updated = results.filter((r) => !selectedResultIds.includes(r.id));
         setResults(updated);
         saveResults(updated);
+        saveCloudResults(updated);
         setSelectedResultIds([]);
         setDeleteConfirm(null);
         showNotification(`${selectedResultIds.length} টি ফলাফল সফলভাবে মুছে ফেলা হয়েছে।`);
@@ -257,6 +272,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       onConfirm: () => {
         setResults([]);
         saveResults([]);
+        saveCloudResults([]);
         setSelectedResultIds([]);
         setDeleteConfirm(null);
         showNotification('সকল ফলাফল তালিকা সফলভাবে খালি করা হয়েছে।');
@@ -307,8 +323,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       const merged = [...imported, ...results];
       setResults(merged);
       saveResults(merged);
+      saveCloudResults(merged);
       showNotification(
-        `এক্সেল থেকে সফলভাবে ${imported.length} জন শিক্ষার্থীর ফলাফল যোগ করা হয়েছে!`
+        `এক্সেল থেকে সফলভাবে ${imported.length} জন শিক্ষার্থীর ফলাফল যোগ ও ক্লাউডে সংরক্ষণ করা হয়েছে!`
       );
     } catch {
       showNotification('এক্সেল ফাইল পড়তে সমস্যা হয়েছে। অনুগ্রহ করে নমুনা টেমপ্লেটটি মিলিয়ে দেখুন।', 'error');
@@ -380,7 +397,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       );
       setTeachers(updated);
       saveTeachers(updated);
-      showNotification('শিক্ষকের তথ্য আপডেট করা হয়েছে।');
+      saveCloudTeachers(updated);
+      showNotification('শিক্ষকের তথ্য ক্লাউড ডাটাবেজে আপডেট করা হয়েছে।');
     } else {
       const newT: Teacher = {
         id: `t-${Date.now()}`,
@@ -390,7 +408,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       const updated = [...teachers, newT];
       setTeachers(updated);
       saveTeachers(updated);
-      showNotification('নতুন শিক্ষক সফলভাবে যুক্ত করা হয়েছে।');
+      saveCloudTeachers(updated);
+      showNotification('নতুন শিক্ষক সফলভাবে ক্লাউড ডাটাবেজে যুক্ত করা হয়েছে।');
     }
     setIsTeacherModalOpen(false);
   };
@@ -404,6 +423,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         const updated = teachers.filter((item) => item.id !== t.id);
         setTeachers(updated);
         saveTeachers(updated);
+        saveCloudTeachers(updated);
         setDeleteConfirm(null);
         showNotification('শিক্ষক সফলভাবে মুছে ফেলা হয়েছে।');
       },
@@ -419,6 +439,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       onConfirm: () => {
         setTeachers([]);
         saveTeachers([]);
+        saveCloudTeachers([]);
         setDeleteConfirm(null);
         showNotification('শিক্ষক তালিকা খালি করা হয়েছে।');
       },
@@ -470,7 +491,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       );
       setNotices(updated);
       saveNotices(updated);
-      showNotification('নোটিশ আপডেট করা হয়েছে।');
+      saveCloudNotices(updated);
+      showNotification('নোটিশ ক্লাউড ডাটাবেজে আপডেট করা হয়েছে।');
     } else {
       const newN: Notice = {
         id: `n-${Date.now()}`,
@@ -479,7 +501,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       const updated = [newN, ...notices];
       setNotices(updated);
       saveNotices(updated);
-      showNotification('নতুন নোটিশ প্রকাশিত হয়েছে।');
+      saveCloudNotices(updated);
+      showNotification('নতুন নোটিশ প্রকাশিত ও ক্লাউডে সংরক্ষিত হয়েছে।');
     }
     setIsNoticeModalOpen(false);
   };
@@ -493,6 +516,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         const updated = notices.filter((item) => item.id !== n.id);
         setNotices(updated);
         saveNotices(updated);
+        saveCloudNotices(updated);
         setDeleteConfirm(null);
         showNotification('নোটিশ সফলভাবে মুছে ফেলা হয়েছে।');
       },
@@ -508,6 +532,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       onConfirm: () => {
         setNotices([]);
         saveNotices([]);
+        saveCloudNotices([]);
         setDeleteConfirm(null);
         showNotification('নোটিশ বোর্ড খালি করা হয়েছে।');
       },
@@ -522,6 +547,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const updated = applications.map((a) => (a.id === id ? { ...a, status } : a));
     setApplications(updated);
     saveApplications(updated);
+    saveCloudApplications(updated);
     showNotification(`আবেদনের স্ট্যাটাস পরিবর্তিত: ${status}`);
   };
 
@@ -534,6 +560,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         const updated = applications.filter((a) => a.id !== app.id);
         setApplications(updated);
         saveApplications(updated);
+        saveCloudApplications(updated);
         setDeleteConfirm(null);
         showNotification('ভর্তি আবেদন মুছে ফেলা হয়েছে।');
       },
@@ -576,11 +603,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     e.preventDefault();
     setSchoolInfo(settingsForm);
     saveSchoolInfo(settingsForm);
+    saveCloudSchoolInfo(settingsForm);
     if (newAdminPass.trim()) {
       saveAdminPassword(newAdminPass.trim());
+      saveCloudAdminPassword(newAdminPass.trim());
       setNewAdminPass('');
     }
-    showNotification('স্কুলের তথ্য, লোগো ও সেটিংস সফলভাবে সংরক্ষিত হয়েছে।');
+    showNotification('স্কুলের তথ্য, লোগো ও সেটিংস ক্লাউড ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে।');
   };
 
   const [pastedBackupText, setPastedBackupText] = useState('');
@@ -590,11 +619,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     if (data?.school) {
       setSchoolInfo(data.school);
       setSettingsForm({ ...data.school });
+      saveSchoolInfo(data.school);
+      saveCloudSchoolInfo(data.school);
     }
-    if (data?.teachers) setTeachers(data.teachers);
-    if (data?.notices) setNotices(data.notices);
-    if (data?.results) setResults(data.results);
-    if (data?.applications) setApplications(data.applications);
+    if (data?.teachers) {
+      setTeachers(data.teachers);
+      saveTeachers(data.teachers);
+      saveCloudTeachers(data.teachers);
+    }
+    if (data?.notices) {
+      setNotices(data.notices);
+      saveNotices(data.notices);
+      saveCloudNotices(data.notices);
+    }
+    if (data?.results) {
+      setResults(data.results);
+      saveResults(data.results);
+      saveCloudResults(data.results);
+    }
+    if (data?.applications) {
+      setApplications(data.applications);
+      saveApplications(data.applications);
+      saveCloudApplications(data.applications);
+    }
+    if (data?.students) {
+      saveStudentAccounts(data.students);
+      saveCloudStudents(data.students);
+    }
 
     showNotification(msg);
   };
@@ -698,6 +749,28 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     return matchClass && matchTerm;
   });
 
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
+
+  const handleForceSyncToCloud = async () => {
+    setIsSyncingCloud(true);
+    try {
+      await Promise.all([
+        saveCloudSchoolInfo(schoolInfo),
+        saveCloudTeachers(teachers),
+        saveCloudNotices(notices),
+        saveCloudResults(results),
+        saveCloudApplications(applications),
+        saveCloudStudents(getStoredStudentAccounts()),
+      ]);
+      showNotification('মাশাআল্লাহ! বর্তমান সকল ডেটা কেন্দ্রীয় গুগল ক্লাউড ডাটাবেজে সেভ হয়েছে!');
+    } catch (err) {
+      console.error(err);
+      showNotification('ক্লাউড সিঙ্ক করতে সমস্যা হয়েছে।', 'error');
+    } finally {
+      setIsSyncingCloud(false);
+    }
+  };
+
   return (
     <div className="py-8 bg-stone-100 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -713,9 +786,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <p className="text-xs text-stone-300 mt-1">
               ফলাফল ব্যবস্থাপনা, শিক্ষক তালিকা, নোটিশ বোর্ড ও ওয়েবসাইট তথ্য পরিবর্তন
             </p>
+            <div className="mt-2.5 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-900/90 border border-emerald-500/40 text-[11px] font-medium text-emerald-200">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                গুগল ক্লাউড ডাটাবেজ সচল (Firebase Firestore Live)
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleForceSyncToCloud}
+              disabled={isSyncingCloud}
+              className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs border border-emerald-500/50"
+              title="বর্তমান সকল তথ্য ক্লাউড ডাটাবেজে স্থায়ীভাবে সেভ করুন"
+            >
+              <Cloud className={`w-3.5 h-3.5 text-amber-300 ${isSyncingCloud ? 'animate-bounce' : ''}`} />
+              <span>{isSyncingCloud ? 'ক্লাউড সিঙ্ক হচ্ছে...' : 'ক্লাউড সেভ করুন'}</span>
+            </button>
             <button
               onClick={exportFullBackup}
               className="px-3.5 py-2 bg-emerald-800 hover:bg-emerald-700 text-emerald-100 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"

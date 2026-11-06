@@ -1,0 +1,144 @@
+{
+  "entities": {
+    "SchoolInfo": {
+      "title": "SchoolInfo",
+      "description": "General school information, contact details, description, logo and banner",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "nameBangla": { "type": "string" },
+        "established": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "altPhone": { "type": "string" },
+        "email": { "type": "string" },
+        "eiinNumber": { "type": "string" },
+        "tagline": { "type": "string" },
+        "aboutHistory": { "type": "string" },
+        "classesOffered": { "type": "array" },
+        "bannerUrl": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "learningSceneUrl": { "type": "string" },
+        "headmasterMessage": { "type": "string" },
+        "headmasterName": { "type": "string" }
+      },
+      "required": ["name", "nameBangla", "address", "phone"]
+    },
+    "Teacher": {
+      "title": "Teacher",
+      "description": "Faculty member profile with contact and specialization",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "designation": { "type": "string" },
+        "mobile": { "type": "string" },
+        "qualifications": { "type": "string" },
+        "subjectSpeciality": { "type": "string" },
+        "order": { "type": "number" },
+        "photoUrl": { "type": "string" }
+      },
+      "required": ["name", "designation", "mobile"]
+    },
+    "StudentResult": {
+      "title": "StudentResult",
+      "description": "Student marksheet and exam assessment result",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentId": { "type": "string" },
+        "roll": { "type": "string" },
+        "name": { "type": "string" },
+        "class": { "type": "string" },
+        "examType": { "type": "string" },
+        "year": { "type": "string" },
+        "termOrMonth": { "type": "string" },
+        "subjects": { "type": "array" },
+        "totalMarks": { "type": "number" },
+        "fullMarks": { "type": "number" },
+        "percentage": { "type": "number" },
+        "grade": { "type": "string" },
+        "gpa": { "type": "number" },
+        "resultStatus": { "type": "string" },
+        "remarks": { "type": "string" }
+      },
+      "required": ["studentId", "roll", "name", "class", "examType", "year"]
+    },
+    "Notice": {
+      "title": "Notice",
+      "description": "Institutional notice or circular announcement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "category": { "type": "string" },
+        "details": { "type": "string" },
+        "isImportant": { "type": "boolean" }
+      },
+      "required": ["title", "date", "category", "details"]
+    },
+    "AdmissionApplication": {
+      "title": "AdmissionApplication",
+      "description": "Online admission registration submitted by parents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "studentName": { "type": "string" },
+        "targetClass": { "type": "string" },
+        "dob": { "type": "string" },
+        "gender": { "type": "string" },
+        "fatherName": { "type": "string" },
+        "motherName": { "type": "string" },
+        "guardianPhone": { "type": "string" },
+        "address": { "type": "string" },
+        "appliedDate": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["studentName", "targetClass", "guardianPhone"]
+    },
+    "StudentAccount": {
+      "title": "StudentAccount",
+      "description": "Student credentials for personalized result portal",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "studentId": { "type": "string" },
+        "roll": { "type": "string" },
+        "class": { "type": "string" },
+        "phone": { "type": "string" },
+        "password": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "studentId", "roll", "class", "phone", "password"]
+    }
+  },
+  "firestore": {
+    "/schoolInfo/{docId}": {
+      "schema": { "$ref": "#/entities/SchoolInfo" },
+      "description": "School institutional profile details"
+    },
+    "/teachers/{teacherId}": {
+      "schema": { "$ref": "#/entities/Teacher" },
+      "description": "Teacher directory entries"
+    },
+    "/results/{resultId}": {
+      "schema": { "$ref": "#/entities/StudentResult" },
+      "description": "Academic exam results and transcripts"
+    },
+    "/notices/{noticeId}": {
+      "schema": { "$ref": "#/entities/Notice" },
+      "description": "School notices and updates"
+    },
+    "/applications/{appId}": {
+      "schema": { "$ref": "#/entities/AdmissionApplication" },
+      "description": "Online admission applications submitted by parents"
+    },
+    "/students/{studentId}": {
+      "schema": { "$ref": "#/entities/StudentAccount" },
+      "description": "Registered student portal login accounts"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SchoolInfo, AdmissionApplication } from '../types';
 import { getStoredApplications, saveApplications } from '../services/storageService';
+import { saveCloudApplications } from '../services/cloudService';
 import {
   GraduationCap,
   Calendar,
@@ -51,7 +52,9 @@ export const AdmissionSection: React.FC<AdmissionSectionProps> = ({ schoolInfo }
       };
 
       const existing = getStoredApplications();
-      saveApplications([newApp, ...existing]);
+      const updatedList = [newApp, ...existing];
+      saveApplications(updatedList);
+      saveCloudApplications(updatedList);
 
       setSubmittedApp(newApp);
       setIsSubmitting(false);

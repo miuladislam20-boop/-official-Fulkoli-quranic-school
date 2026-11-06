@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SchoolInfo,
   Teacher,
@@ -20,7 +20,27 @@ import {
   getStoredApplications,
   getCurrentStudentSession,
   saveCurrentStudentSession,
+  saveSchoolInfo,
+  saveTeachers,
+  saveNotices,
+  saveResults,
+  saveApplications,
+  saveStudentAccounts,
+  saveAdminPassword,
 } from './services/storageService';
+import {
+  syncCloudSchoolInfo,
+  syncCloudTeachers,
+  syncCloudNotices,
+  syncCloudResults,
+  syncCloudApplications,
+  syncCloudStudents,
+  syncCloudAdminPassword,
+  subscribeToCloudSchoolInfo,
+  subscribeToCloudTeachers,
+  subscribeToCloudResults,
+  subscribeToCloudNotices,
+} from './services/cloudService';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { ResultPanel } from './components/ResultPanel';
@@ -61,6 +81,83 @@ export default function App() {
   const [initialSearchQuery, setInitialSearchQuery] = useState<
     { studentId?: string; roll?: string; studentClass?: string } | undefined
   >(undefined);
+
+  // Cloud Firestore Real-time Synchronization across all devices and visitors
+  useEffect(() => {
+    async function loadCloudData() {
+      try {
+        const [cloudInfo, cloudTeachers, cloudNotices, cloudResults, cloudApps, cloudStudents, cloudPass] =
+          await Promise.all([
+            syncCloudSchoolInfo(),
+            syncCloudTeachers(),
+            syncCloudNotices(),
+            syncCloudResults(),
+            syncCloudApplications(),
+            syncCloudStudents(),
+            syncCloudAdminPassword(),
+          ]);
+
+        if (cloudInfo) {
+          setSchoolInfo(cloudInfo);
+          saveSchoolInfo(cloudInfo);
+        }
+        if (cloudTeachers && cloudTeachers.length > 0) {
+          setTeachers(cloudTeachers);
+          saveTeachers(cloudTeachers);
+        }
+        if (cloudNotices && cloudNotices.length > 0) {
+          setNotices(cloudNotices);
+          saveNotices(cloudNotices);
+        }
+        if (cloudResults && cloudResults.length > 0) {
+          setResults(cloudResults);
+          saveResults(cloudResults);
+        }
+        if (cloudApps && cloudApps.length > 0) {
+          setApplications(cloudApps);
+          saveApplications(cloudApps);
+        }
+        if (cloudStudents && cloudStudents.length > 0) {
+          saveStudentAccounts(cloudStudents);
+        }
+        if (cloudPass) {
+          saveAdminPassword(cloudPass);
+        }
+      } catch (err) {
+        console.warn('Initial cloud sync error:', err);
+      }
+    }
+
+    loadCloudData();
+
+    // Live subscription for instant updates on any visitor's device
+    const unsubSchool = subscribeToCloudSchoolInfo((info) => {
+      setSchoolInfo(info);
+      saveSchoolInfo(info);
+    });
+
+    const unsubTeachers = subscribeToCloudTeachers((list) => {
+      setTeachers(list);
+      saveTeachers(list);
+    });
+
+    const unsubResults = subscribeToCloudResults((list) => {
+      setResults(list);
+      saveResults(list);
+    });
+
+    const unsubNotices = subscribeToCloudNotices((list) => {
+      setNotices(list);
+      saveNotices(list);
+    });
+
+    return () => {
+      unsubSchool();
+      unsubTeachers();
+      unsubResults();
+      unsubNotices();
+    };
+  }, []);
 
   // Admin handlers
   const handleAdminSuccess = () => {
