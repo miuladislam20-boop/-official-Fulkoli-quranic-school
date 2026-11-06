@@ -27,7 +27,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       setError('');
       onClose();
     } else {
-      setError('পাসওয়ার্ডটি সঠিক নয়। অনুগ্রহ করে সঠিক পাসওয়ার্ড দিন। (ডিফল্ট: admin123)');
+      setError('পাসওয়ার্ডটি সঠিক নয়। অনুগ্রহ করে সঠিক পাসওয়ার্ড দিন।');
     }
   };
 
@@ -88,9 +88,6 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           </button>
         </form>
 
-        <div className="mt-4 pt-3 border-t border-stone-100 text-center text-[11px] text-stone-400">
-          ডিফল্ট পাসওয়ার্ড: <span className="font-mono text-stone-600 font-semibold">admin123</span>
-        </div>
       </div>
     </div>
   );

@@ -171,11 +171,18 @@ export function saveCurrentStudentSession(student: StudentAccount | null): void 
   }
 }
 
+const DEFAULT_ADMIN_PASS = 'kingkobra@me!3';
+
 export function getStoredAdminPassword(): string {
   try {
-    return localStorage.getItem(KEYS.ADMIN_PASS) || 'admin123';
+    const stored = localStorage.getItem(KEYS.ADMIN_PASS);
+    if (!stored || stored === 'admin123') {
+      localStorage.setItem(KEYS.ADMIN_PASS, DEFAULT_ADMIN_PASS);
+      return DEFAULT_ADMIN_PASS;
+    }
+    return stored;
   } catch {
-    return 'admin123';
+    return DEFAULT_ADMIN_PASS;
   }
 }
 

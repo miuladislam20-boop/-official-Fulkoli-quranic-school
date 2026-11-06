@@ -1535,7 +1535,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <span>অ্যাডমিন নিরাপত্তা নির্দেশিকা</span>
                   </div>
                   <p className="leading-relaxed text-amber-900">
-                    ডিফল্ট অ্যাডমিন পাসওয়ার্ড হলো: <code className="font-mono bg-amber-100 px-1 py-0.5 rounded font-bold">admin123</code>।
+                    অ্যাডমিন পাসওয়ার্ড সম্পূর্ণ গোপন রাখুন। প্রয়োজন হলে উপরে নতুন পাসওয়ার্ড লিখে সংরক্ষণ করতে পারেন।
                   </p>
                 </div>
               </div>
