@@ -17,6 +17,7 @@ import {
   saveResults,
   saveApplications,
   exportFullBackup,
+  getFullBackupJSONString,
   restoreFullBackup,
   exportResultsToExcel,
   downloadExcelTemplate,
@@ -49,6 +50,8 @@ import {
   Square,
   RefreshCw,
   FileText,
+  Copy,
+  ClipboardPaste,
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -578,6 +581,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     showNotification('স্কুলের তথ্য, লোগো ও সেটিংস সফলভাবে সংরক্ষিত হয়েছে।');
   };
 
+  const [pastedBackupText, setPastedBackupText] = useState('');
+  const [showPasteBox, setShowPasteBox] = useState(false);
+
+  const applyRestoredData = (data: any, msg: string) => {
+    if (data?.school) {
+      setSchoolInfo(data.school);
+      setSettingsForm({ ...data.school });
+    }
+    if (data?.teachers) setTeachers(data.teachers);
+    if (data?.notices) setNotices(data.notices);
+    if (data?.results) setResults(data.results);
+    if (data?.applications) setApplications(data.applications);
+
+    showNotification(msg);
+  };
+
   const handleRestoreBackupFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -586,14 +605,42 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     reader.onload = (event) => {
       const content = event.target?.result as string;
       const res = restoreFullBackup(content);
-      if (res.success) {
-        window.location.reload();
+      if (res.success && res.data) {
+        applyRestoredData(
+          res.data,
+          'মাশাআল্লাহ! ব্যাকআপ ফাইল সফলভাবে রিস্টোর হয়েছে। সকল তথ্য সাথে সাথে আপডেট হয়েছে!'
+        );
       } else {
         showNotification(res.message, 'error');
       }
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const handleCopyBackupCode = () => {
+    try {
+      const code = getFullBackupJSONString();
+      navigator.clipboard.writeText(code);
+      showNotification('সম্পূর্ণ ব্যাকআপ কোড ক্লিপবোর্ডে কপি হয়েছে! এবার নতুন সাইটে গিয়ে পেস্ট করুন।');
+    } catch {
+      showNotification('ক্লিপবোর্ডে কপি করতে ব্যর্থ হয়েছে। "1-Click Full Backup" ফাইলটি ডাউনলোড করুন।', 'error');
+    }
+  };
+
+  const handleRestorePastedCode = () => {
+    if (!pastedBackupText.trim()) {
+      showNotification('অনুগ্রহ করে ব্যাকআপ কোড পেস্ট করুন।', 'error');
+      return;
+    }
+    const res = restoreFullBackup(pastedBackupText.trim());
+    if (res.success && res.data) {
+      applyRestoredData(res.data, 'মাশাআল্লাহ! পেস্ট করা ব্যাকআপ সফলভাবে রিস্টোর হয়েছে!');
+      setPastedBackupText('');
+      setShowPasteBox(false);
+    } else {
+      showNotification(res.message, 'error');
+    }
   };
 
   // Filtered results for view
@@ -1506,24 +1553,72 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </p>
 
                   <div className="space-y-3">
-                    <button
-                      onClick={exportFullBackup}
-                      className="w-full py-2.5 px-4 bg-emerald-900 hover:bg-emerald-950 text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-                    >
-                      <Download className="w-4 h-4 text-amber-300" />
-                      <span>1-Click Full Backup (JSON)</span>
-                    </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={exportFullBackup}
+                        className="py-2 px-3 bg-emerald-900 hover:bg-emerald-950 text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        title="কম্পিউটার বা মোবাইলে ফাইল সেভ করুন"
+                      >
+                        <Download className="w-3.5 h-3.5 text-amber-300" />
+                        <span>ফাইল ডাউনলোড (.json)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleCopyBackupCode}
+                        className="py-2 px-3 bg-stone-800 hover:bg-stone-700 text-stone-100 font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs border border-stone-600"
+                        title="কোড কপি করে অন্য লিংকে পেস্ট করুন"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-emerald-300" />
+                        <span>কোড কপি করুন (Copy)</span>
+                      </button>
+                    </div>
 
                     <div className="pt-3 border-t border-stone-200">
                       <label className="block text-xs font-bold text-stone-800 mb-1.5">
-                        সংরক্ষিত ব্যাকআপ ফাইল রিস্টোর করুন:
+                        ১. ব্যাকআপ ফাইল থেকে রিস্টোর:
                       </label>
                       <input
                         type="file"
-                        accept=".json"
+                        accept=".json,application/json,text/plain,*/*"
                         onChange={handleRestoreBackupFile}
                         className="w-full text-xs text-stone-600 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-stone-800 file:text-white cursor-pointer"
                       />
+                      <p className="text-[11px] text-stone-500 mt-1">
+                        ডাউনলোড করা .json ব্যাকআপ ফাইলটি বেছে নিন
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-stone-200">
+                      <button
+                        type="button"
+                        onClick={() => setShowPasteBox(!showPasteBox)}
+                        className="text-xs font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 cursor-pointer"
+                      >
+                        <ClipboardPaste className="w-3.5 h-3.5" />
+                        <span>{showPasteBox ? 'পেস্ট বক্স বন্ধ করুন' : '২. অথবা কোড পেস্ট করে রিস্টোর করুন (সহজ)'}</span>
+                      </button>
+
+                      {showPasteBox && (
+                        <div className="mt-2 space-y-2 p-2.5 bg-stone-50 rounded-lg border border-stone-300">
+                          <textarea
+                            rows={3}
+                            placeholder="কপি করা ব্যাকআপ কোডটি এখানে পেস্ট করুন..."
+                            value={pastedBackupText}
+                            onChange={(e) => setPastedBackupText(e.target.value)}
+                            className="w-full p-2 text-xs font-mono bg-white border border-stone-300 rounded focus:outline-hidden focus:ring-1 focus:ring-emerald-700"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRestorePastedCode}
+                            className="w-full py-1.5 px-3 bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5 text-amber-300" />
+                            <span>পেস্ট করা ব্যাকআপ কার্যকর করুন</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

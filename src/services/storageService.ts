@@ -191,7 +191,7 @@ export function saveAdminPassword(newPass: string): void {
 }
 
 // 1-Click JSON Backup & Restore for safe data keeping
-export function exportFullBackup(): void {
+export function getFullBackupJSONString(): string {
   const backup = {
     school: getStoredSchoolInfo(),
     teachers: getStoredTeachers(),
@@ -202,30 +202,106 @@ export function exportFullBackup(): void {
     backupDate: new Date().toISOString(),
     schoolName: 'Fulkoli Quranic School, Bogura',
   };
-
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backup, null, 2));
-  const dlAnchorElem = document.createElement('a');
-  dlAnchorElem.setAttribute('href', dataStr);
-  dlAnchorElem.setAttribute(
-    'download',
-    `Fulkoli_School_Backup_${new Date().toISOString().slice(0, 10)}.json`
-  );
-  dlAnchorElem.click();
+  return JSON.stringify(backup, null, 2);
 }
 
-export function restoreFullBackup(jsonData: string): { success: boolean; message: string } {
+export function exportFullBackup(): void {
   try {
-    const parsed = JSON.parse(jsonData);
-    if (parsed.school) saveSchoolInfo(parsed.school);
-    if (Array.isArray(parsed.teachers)) saveTeachers(parsed.teachers);
-    if (Array.isArray(parsed.notices)) saveNotices(parsed.notices);
-    if (Array.isArray(parsed.results)) saveResults(parsed.results);
-    if (Array.isArray(parsed.applications)) saveApplications(parsed.applications);
-    if (Array.isArray(parsed.students)) saveStudentAccounts(parsed.students);
+    const jsonString = getFullBackupJSONString();
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.href = url;
+    dlAnchorElem.download = `Fulkoli_School_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(dlAnchorElem);
+    dlAnchorElem.click();
+    setTimeout(() => {
+      document.body.removeChild(dlAnchorElem);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  } catch (err) {
+    console.error('Backup download error:', err);
+  }
+}
 
-    return { success: true, message: 'সকল ডেটা সফলভাবে রিস্টোর করা হয়েছে।' };
+export function restoreFullBackup(jsonData: string): {
+  success: boolean;
+  message: string;
+  data?: {
+    school?: SchoolInfo;
+    teachers?: Teacher[];
+    notices?: Notice[];
+    results?: StudentResult[];
+    applications?: AdmissionApplication[];
+    students?: StudentAccount[];
+  };
+} {
+  try {
+    const trimmed = jsonData.trim().replace(/^\uFEFF/, '');
+    if (!trimmed) {
+      return { success: false, message: 'ব্যাকআপ ডেটা খালি। অনুগ্রহ করে সঠিক ফাইল বা কোড দিন।' };
+    }
+
+    const parsed = JSON.parse(trimmed);
+    const restoredData: {
+      school?: SchoolInfo;
+      teachers?: Teacher[];
+      notices?: Notice[];
+      results?: StudentResult[];
+      applications?: AdmissionApplication[];
+      students?: StudentAccount[];
+    } = {};
+
+    if (parsed && typeof parsed === 'object') {
+      if (parsed.school && typeof parsed.school === 'object') {
+        saveSchoolInfo(parsed.school);
+        restoredData.school = parsed.school;
+      }
+      if (Array.isArray(parsed.teachers)) {
+        saveTeachers(parsed.teachers);
+        restoredData.teachers = parsed.teachers;
+      }
+      if (Array.isArray(parsed.notices)) {
+        saveNotices(parsed.notices);
+        restoredData.notices = parsed.notices;
+      }
+      if (Array.isArray(parsed.results)) {
+        saveResults(parsed.results);
+        restoredData.results = parsed.results;
+      }
+      if (Array.isArray(parsed.applications)) {
+        saveApplications(parsed.applications);
+        restoredData.applications = parsed.applications;
+      }
+      if (Array.isArray(parsed.students)) {
+        saveStudentAccounts(parsed.students);
+        restoredData.students = parsed.students;
+      }
+
+      // If user uploaded a direct SchoolInfo object
+      if (!parsed.school && parsed.nameBangla && parsed.address) {
+        saveSchoolInfo(parsed as SchoolInfo);
+        restoredData.school = parsed as SchoolInfo;
+      }
+    } else if (Array.isArray(parsed)) {
+      if (parsed.length > 0 && parsed[0].studentId) {
+        saveResults(parsed);
+        restoredData.results = parsed;
+      }
+    } else {
+      return { success: false, message: 'ফাইলটিতে কোনো সঠিক তথ্য পাওয়া যায়নি।' };
+    }
+
+    return {
+      success: true,
+      message: 'সকল ডেটা সফলভাবে রিস্টোর হয়েছে!',
+      data: restoredData,
+    };
   } catch {
-    return { success: false, message: 'ফাইলটি সঠিক ব্যাকআপ ফাইল নয়।' };
+    return {
+      success: false,
+      message: 'ফাইলটি সঠিক ব্যাকআপ ফাইল নয়। অনুগ্রহ করে সঠিক .json ফাইল নির্বাচন করুন বা কোড পেস্ট করুন।',
+    };
   }
 }
 
