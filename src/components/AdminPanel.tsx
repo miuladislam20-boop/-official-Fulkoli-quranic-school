@@ -18,7 +18,9 @@ import {
   saveApplications,
   exportFullBackup,
   getFullBackupJSONString,
+  copyTextToClipboard,
   restoreFullBackup,
+  getStoredStudentAccounts,
   exportResultsToExcel,
   downloadExcelTemplate,
   parseExcelResults,
@@ -618,14 +620,56 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     e.target.value = '';
   };
 
-  const handleCopyBackupCode = () => {
+  const [backupViewerCode, setBackupViewerCode] = useState<string | null>(null);
+
+  const handleCopyBackupCode = async () => {
     try {
-      const code = getFullBackupJSONString();
-      navigator.clipboard.writeText(code);
-      showNotification('সম্পূর্ণ ব্যাকআপ কোড ক্লিপবোর্ডে কপি হয়েছে! এবার নতুন সাইটে গিয়ে পেস্ট করুন।');
-    } catch {
-      showNotification('ক্লিপবোর্ডে কপি করতে ব্যর্থ হয়েছে। "1-Click Full Backup" ফাইলটি ডাউনলোড করুন।', 'error');
+      const liveBackup = {
+        school: schoolInfo,
+        teachers: teachers,
+        notices: notices,
+        results: results,
+        applications: applications,
+        students: getStoredStudentAccounts(),
+        backupDate: new Date().toISOString(),
+        schoolName: schoolInfo.nameBangla || 'Fulkoli Quranic School',
+      };
+      const code = JSON.stringify(liveBackup, null, 2);
+      setBackupViewerCode(code);
+      const copied = await copyTextToClipboard(code);
+      if (copied) {
+        showNotification('সম্পূর্ণ ব্যাকআপ কোড সফলভাবে কপি হয়েছে! নিচের বক্সেও কোডটি দেখতে পাচ্ছেন।');
+      } else {
+        showNotification('ব্যাকআপ কোড প্রস্তুত হয়েছে! নিচের বক্স থেকে সহজে কপি করে নিন।');
+      }
+    } catch (err) {
+      console.error(err);
+      showNotification('ব্যাকআপ তৈরি করতে সমস্যা হয়েছে।', 'error');
     }
+  };
+
+  const handleCopyFromViewer = async () => {
+    if (!backupViewerCode) return;
+    const copied = await copyTextToClipboard(backupViewerCode);
+    if (copied) {
+      showNotification('সম্পূর্ণ ব্যাকআপ কোড সফলভাবে কপি হয়েছে!');
+    }
+  };
+
+  const handleAutoPasteFromClipboard = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text.trim()) {
+          setPastedBackupText(text);
+          showNotification('ক্লিপবোর্ড থেকে কোড পেস্ট হয়েছে! এবার "পেস্ট করা ব্যাকআপ কার্যকর করুন" চাপুন।');
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    showNotification('অনুগ্রহ করে নিচের বক্সে চেপে ধরে (Long-press) পেস্ট করুন।');
   };
 
   const handleRestorePastedCode = () => {
@@ -1575,6 +1619,43 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </button>
                     </div>
 
+                    {/* Visible Backup Code Box */}
+                    {backupViewerCode && (
+                      <div className="p-3 bg-amber-50/90 border border-amber-300 rounded-xl space-y-2">
+                        <div className="flex items-center justify-between text-xs font-bold text-amber-950">
+                          <span className="flex items-center gap-1">
+                            <Copy className="w-3 h-3 text-amber-700" />
+                            <span>আপনার সম্পূর্ণ ব্যাকআপ কোড:</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setBackupViewerCode(null)}
+                            className="text-stone-400 hover:text-stone-700 text-[11px] cursor-pointer"
+                          >
+                            লুকান ✕
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-amber-800">
+                          নিচের বক্সে ক্লিক করে সব সিলেক্ট করে কপি করতে পারেন:
+                        </p>
+                        <textarea
+                          readOnly
+                          rows={4}
+                          value={backupViewerCode}
+                          onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                          className="w-full p-2 text-[10px] font-mono bg-white border border-amber-200 rounded focus:outline-hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCopyFromViewer}
+                          className="w-full py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs rounded transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>১ ক্লিকে সম্পূর্ণ কোড কপি করুন</span>
+                        </button>
+                      </div>
+                    )}
+
                     <div className="pt-3 border-t border-stone-200">
                       <label className="block text-xs font-bold text-stone-800 mb-1.5">
                         ১. ব্যাকআপ ফাইল থেকে রিস্টোর:
@@ -1602,8 +1683,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                       {showPasteBox && (
                         <div className="mt-2 space-y-2 p-2.5 bg-stone-50 rounded-lg border border-stone-300">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-stone-700">কোড পেস্ট বক্স:</span>
+                            <button
+                              type="button"
+                              onClick={handleAutoPasteFromClipboard}
+                              className="text-xs text-emerald-700 hover:text-emerald-900 font-semibold underline cursor-pointer"
+                            >
+                              অটো পেস্ট
+                            </button>
+                          </div>
                           <textarea
-                            rows={3}
+                            rows={4}
                             placeholder="কপি করা ব্যাকআপ কোডটি এখানে পেস্ট করুন..."
                             value={pastedBackupText}
                             onChange={(e) => setPastedBackupText(e.target.value)}

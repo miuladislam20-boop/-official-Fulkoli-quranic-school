@@ -190,6 +190,39 @@ export function saveAdminPassword(newPass: string): void {
   localStorage.setItem(KEYS.ADMIN_PASS, newPass);
 }
 
+// Bulletproof clipboard copy with execCommand fallback for iframes/mobile
+export async function copyTextToClipboard(text: string): Promise<boolean> {
+  let success = false;
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      success = true;
+    } catch {
+      success = false;
+    }
+  }
+
+  if (!success) {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      success = document.execCommand('copy');
+      document.body.removeChild(textArea);
+    } catch (err) {
+      console.error('Copy fallback failed:', err);
+    }
+  }
+
+  return success;
+}
+
 // 1-Click JSON Backup & Restore for safe data keeping
 export function getFullBackupJSONString(): string {
   const backup = {
