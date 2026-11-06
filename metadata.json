@@ -1,0 +1,6 @@
+{
+  "name": "Fulkoli Quranic School - ফুলকলি কুরআনিক স্কুল",
+  "description": "ফুলকলি কুরআনিক স্কুল (বগুড়া) এর অফিসিয়াল ওয়েবসাইট ও রেজাল্ট পোর্টাল। প্লে থেকে ৫ম শ্রেণি ও হিফজ বিভাগ, শিক্ষক পরিচিতি, অনলাইন ভর্তি ও এক্সেল রেজাল্ট সিস্টেম।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
